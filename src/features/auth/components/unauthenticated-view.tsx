@@ -25,6 +25,13 @@ export const UnauthenticatedView = () => {
               You are not authorized to access this resource.
             </ItemDescription>
           </ItemContent>
+          <ItemActions>
+            <SignInButton>
+              <Button variant="outline" size="sm">
+                Sign in
+              </Button>
+            </SignInButton>
+          </ItemActions>
         </Item>
       </div>
     </div>
