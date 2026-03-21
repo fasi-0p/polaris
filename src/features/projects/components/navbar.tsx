@@ -12,6 +12,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/components/ui/tooltip";
 import {
   Breadcrumb,
@@ -68,90 +69,92 @@ export const Navbar = ({
   };
 
   return (
-    <nav className="flex justify-between items-center gap-x-2 p-2 bg-sidebar border-b">
-      <div className="flex items-center gap-x-2">
-        <Breadcrumb>
-          <BreadcrumbList className="gap-0!">
-            <BreadcrumbItem>
-              <BreadcrumbLink
-                className="flex items-center gap-1.5"
-                asChild
-              >
-                <Button
-                  variant="ghost"
-                  className="w-fit! p-1.5! h-7!"
+    <TooltipProvider>
+      <nav className="flex justify-between items-center gap-x-2 p-2 bg-sidebar border-b">
+        <div className="flex items-center gap-x-2">
+          <Breadcrumb>
+            <BreadcrumbList className="gap-0!">
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  className="flex items-center gap-1.5"
                   asChild
                 >
-                  <Link href="/">
-                    <Image
-                      src="/logo.svg"
-                      alt="Logo"
-                      width={20}
-                      height={20}
-                    />
-                    <span
-                      className={cn(
-                        "text-sm font-medium",
-                        font.className,
-                      )}
-                    >
-                      Polaris
-                    </span>
-                  </Link>
-                </Button>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="ml-0! mr-1" />
-            <BreadcrumbItem>
-              {isRenaming ? (
-                <input
-                  autoFocus
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onBlur={handleSubmit}
-                  onKeyDown={handleKeyDown}
-                  className="text-sm bg-transparent text-foreground outline-none focus:ring-1 focus:ring-inset focus:ring-ring font-medium max-w-40 truncate"
-                />
-              ) : (
-                <BreadcrumbPage
-                  onClick={handleStartRename}
-                  className="text-sm cursor-pointer hover:text-primary font-medium max-w-40 truncate"
-                >
-                  {project?.name ?? "Loading..."}
-                </BreadcrumbPage>
-              )}
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        {project?.importStatus === "importing" ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <LoaderIcon className="size-4 text-muted-foreground animate-spin" />
-            </TooltipTrigger>
-            <TooltipContent>Importing...</TooltipContent>
-          </Tooltip>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <CloudCheckIcon className="size-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              Saved{" "}
-              {project?.updatedAt 
-                ? formatDistanceToNow(
-                  project.updatedAt,
-                  { addSuffix: true, }
-                )
-                : "Loading..."}
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <UserButton />
-      </div>
-    </nav>
+                  <Button
+                    variant="ghost"
+                    className="w-fit! p-1.5! h-7!"
+                    asChild
+                  >
+                    <Link href="/">
+                      <Image
+                        src="/logo.svg"
+                        alt="Logo"
+                        width={20}
+                        height={20}
+                      />
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          font.className,
+                        )}
+                      >
+                        Polaris
+                      </span>
+                    </Link>
+                  </Button>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="ml-0! mr-1" />
+              <BreadcrumbItem>
+                {isRenaming ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onBlur={handleSubmit}
+                    onKeyDown={handleKeyDown}
+                    className="text-sm bg-transparent text-foreground outline-none focus:ring-1 focus:ring-inset focus:ring-ring font-medium max-w-40 truncate"
+                  />
+                ) : (
+                  <BreadcrumbPage
+                    onClick={handleStartRename}
+                    className="text-sm cursor-pointer hover:text-primary font-medium max-w-40 truncate"
+                  >
+                    {project?.name ?? "Loading..."}
+                  </BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          {project?.importStatus === "importing" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <LoaderIcon className="size-4 text-muted-foreground animate-spin" />
+              </TooltipTrigger>
+              <TooltipContent>Importing...</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <CloudCheckIcon className="size-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Saved{" "}
+                {project?.updatedAt 
+                  ? formatDistanceToNow(
+                    project.updatedAt,
+                    { addSuffix: true, }
+                  )
+                  : "Loading..."}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <UserButton />
+        </div>
+      </nav>
+    </TooltipProvider>
   )
 };
