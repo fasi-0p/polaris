@@ -6,17 +6,21 @@ import { Id } from "../../../../../convex/_generated/dataModel"
 import { useProject } from "../../hooks/use-projects"
 import { Button } from "@/components/ui/button"
 import { FilePlusCornerIcon , FolderPlusIcon, CopyMinusIcon} from "lucide-react"
-import { useCreateFile,useCreateFolder} from "../../hooks/use-files"
+import { useCreateFile,useCreateFolder, useFolderContents} from "../../hooks/use-files"
 import { CreateInput } from "./create-input"
+import { LoadingRow } from "./loading-row"
+import { Tree } from "./tree"
 
 
 export const  FileExplorer = ({projectId}:{projectId: Id<'projects'>}) => {
   const [isOpen, setIsOpen] = useState(false)
-  const project = useProject(projectId)
   const [collapseKey, setCollapseKey] = useState(0);
   const [creating, setCreating] = useState<"file" | "folder" | null>(
     null
   );
+
+  const project = useProject(projectId)
+  const rootFiles=useFolderContents({projectId, enabled: isOpen})
   const createFile=useCreateFile();
   const createFolder=useCreateFolder();
   const handleCreate = (name: string) => {
@@ -95,6 +99,7 @@ export const  FileExplorer = ({projectId}:{projectId: Id<'projects'>}) => {
         </div>
         {isOpen && (
         <>
+        {rootFiles ===undefined && <LoadingRow level={0}/>}
           {creating && (
             <CreateInput
               type={creating}
@@ -103,6 +108,14 @@ export const  FileExplorer = ({projectId}:{projectId: Id<'projects'>}) => {
               onCancel={() => setCreating(null)}
             />
           )}
+          {rootFiles?.map((item)=>(
+            <Tree 
+            key={`${item._id}-${collapseKey}`}
+            item={item}
+            level={0}
+            projectId={projectId}
+            />
+          ))}
         </>
       )}
       </ScrollArea>
