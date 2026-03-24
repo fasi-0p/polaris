@@ -4,11 +4,39 @@ import { useState } from "react"
 import { cn } from "@/lib/utils" // assuming you're using a cn utility
 import { Id } from "../../../../../convex/_generated/dataModel"
 import { useProject } from "../../hooks/use-projects"
+import { Button } from "@/components/ui/button"
+import { FilePlusCornerIcon , FolderPlusIcon, CopyMinusIcon} from "lucide-react"
+import { useCreateFile,useCreateFolder} from "../../hooks/use-files"
+import { CreateInput } from "./create-input"
 
 
 export const  FileExplorer = ({projectId}:{projectId: Id<'projects'>}) => {
   const [isOpen, setIsOpen] = useState(false)
   const project = useProject(projectId)
+  const [collapseKey, setCollapseKey] = useState(0);
+  const [creating, setCreating] = useState<"file" | "folder" | null>(
+    null
+  );
+  const createFile=useCreateFile();
+  const createFolder=useCreateFolder();
+  const handleCreate = (name: string) => {
+    setCreating(null);
+
+    if (creating === "file") {
+      createFile({
+        projectId,
+        name,
+        content: "",
+        parentId: undefined,
+      });
+    } else {
+      createFolder({
+        projectId,
+        name,
+        parentId: undefined,
+      });
+    }
+  };
 
   return (
     <div className="h-full bg-sidebar">
@@ -27,7 +55,56 @@ export const  FileExplorer = ({projectId}:{projectId: Id<'projects'>}) => {
           <p className="text-xs uppercase line-clamp-1">
             {project?.name?? "Loading..."}
           </p>
+          <div className="opacity-0 group-hover/project:opacity-100 transition-none duration-0 flex items-center gap-0.5 ml-auto">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setIsOpen(true); 
+                setCreating('file'); //to set 'file' to true
+              }}
+              variant="highlight"
+              size="icon-xs"
+            >
+              <FilePlusCornerIcon className="size-3.5" />
+            </Button>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setIsOpen(true); 
+                setCreating("folder"); //to set 'folder' to true
+              }}
+              variant="highlight"
+              size="icon-xs"
+            >
+              <FolderPlusIcon className="size-3.5" />
+            </Button>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault(); 
+                setCollapseKey((prev) => prev+1)//reset collapse
+              }}
+              variant="highlight"
+              size="icon-xs"
+            >
+              <CopyMinusIcon className='size-3.5' />
+            </Button>
+          </div>
         </div>
+        {isOpen && (
+        <>
+          {creating && (
+            <CreateInput
+              type={creating}
+              level={0}
+              onSubmit={handleCreate}
+              onCancel={() => setCreating(null)}
+            />
+          )}
+        </>
+      )}
       </ScrollArea>
     </div>
   )
