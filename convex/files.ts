@@ -1,85 +1,138 @@
 import { v } from "convex/values";
+
 import { mutation, query } from "./_generated/server";
 import { verifyAuth } from "./auth";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 
 export const getFiles = query({
-  args: {projectId: v.id("projects")},
+  args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
     const identity = await verifyAuth(ctx);
+
     const project = await ctx.db.get("projects", args.projectId);
 
-    if(!project){
+    if (!project) {
       throw new Error("Project not found");
     }
 
     if (project.ownerId !== identity.subject) {
-      throw new Error("Unauthorized access to this project");
+      throw new Error("Unauthorized to access this project");
     }
-
 
     return await ctx.db
       .query("files")
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
-      .order("desc")
       .collect();
   },
 });
 
 export const getFile = query({
-  args: {id: v.id("files")},
+  args: { id: v.id("files") },
   handler: async (ctx, args) => {
     const identity = await verifyAuth(ctx);
+
     const file = await ctx.db.get("files", args.id);
 
-    if(!file){
+     if (!file) {
       throw new Error("File not found");
     }
 
     const project = await ctx.db.get("projects", file.projectId);
 
-    if(!project){
+    if (!project) {
       throw new Error("Project not found");
     }
 
     if (project.ownerId !== identity.subject) {
-      throw new Error("Unauthorized access to this project");
+      throw new Error("Unauthorized to access this project");
     }
-
 
     return file;
   },
 });
 
-export const getFolderContents = query({
-  args: {
-    projectId: v.id("projects"),
-    parentId: v.optional(v.id("files"))
-  },
+/**
+ * Builds the full path to a file by traversing up the parent chain.
+ *
+ * Input:  A file ID (e.g., the ID of "button.tsx")
+ * Output: Array of ancestors from root to file: [{ _id, name: "src" }, { _id, name: "components" }, { _id, name: "button.tsx" }]
+ *
+ * Used for: Breadcrumbs navigation (src > components > button.tsx)
+ */
+export const getFilePath = query({
+  args: { id: v.id("files") },
   handler: async (ctx, args) => {
     const identity = await verifyAuth(ctx);
-    const project = await ctx.db.get("projects", args.projectId);
 
-    if(!project){
+    const file = await ctx.db.get("files", args.id);
+
+    if (!file) {
+      throw new Error("File not found");
+    }
+
+    const project = await ctx.db.get("projects", file.projectId);
+
+    if (!project) {
       throw new Error("Project not found");
     }
 
     if (project.ownerId !== identity.subject) {
-      throw new Error("Unauthorized access to this project");
+      throw new Error("Unauthorized to access this project");
     }
 
+    const path: { _id: string; name: string }[] = [];
+    let currentId: Id<"files"> | undefined = args.id;
+
+    while (currentId) {
+      const file = (await ctx.db.get("files", currentId)) as 
+        | Doc<"files">
+        | undefined;
+      if (!file) break;
+
+      path.unshift({ _id: file._id, name: file.name });
+      currentId = file.parentId;
+    }
+
+    return path;
+  },
+});
+
+export const getFolderContents = query({
+  args: { 
+    projectId: v.id("projects"),
+    parentId: v.optional(v.id("files")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await verifyAuth(ctx);
+
+    const project = await ctx.db.get("projects", args.projectId);
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    if (project.ownerId !== identity.subject) {
+      throw new Error("Unauthorized to access this project");
+    }
 
     const files = await ctx.db
-    .query("files")
-    .withIndex("by_project_parent", (q) => q.eq("projectId", args.projectId).eq("parentId", args.parentId))
-    .collect();
-    
-    return files.sort((a,b)=>{
-        if (a.type==='folder' && b.type==='file') return -1;
-        if (a.type==='file' && b.type==='folder') return 1;
+      .query("files")
+      .withIndex("by_project_parent", (q) =>
+        q
+          .eq("projectId", args.projectId)
+          .eq("parentId", args.parentId)
+      )
+      .collect();
 
-        return a.name.localeCompare(b.name);
-    })
+    // Sort: folders first, then files, alphabetically within each group
+    return files.sort((a, b) => {
+      // Folders come before files
+      if (a.type === "folder" && b.type === "file") return -1;
+      if (a.type === "file" && b.type === "folder") return 1;
+
+      // Within same type, sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
   },
 });
 

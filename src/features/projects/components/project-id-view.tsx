@@ -7,6 +7,8 @@ import { useState } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { FileExplorer } from "./file-explorer/index";
+import { EditorView } from "@/features/editor/components/editor-view"
+
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 800;
@@ -88,7 +90,7 @@ export const ProjectIdView = ({
 
             {/* Main panel placeholder */}
             <Allotment.Pane>
-              <div className="h-full">Editor Area</div>
+              <EditorView projectId={projectId} />
             </Allotment.Pane>
           </Allotment>
         </div>
