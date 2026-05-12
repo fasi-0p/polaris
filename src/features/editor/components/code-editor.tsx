@@ -5,6 +5,8 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { indentWithTab } from "@codemirror/commands";
 import { customTheme } from "../extensions/theme";
 import { getLanguageExtension } from "../extensions/language-extension";
+import { minimap } from  "../extensions/minimap";
+
 
 interface Props{
     fileName:string;
@@ -22,7 +24,7 @@ export const CodeEditor = ({fileName}:Props) => {
     const view = new EditorView({
       doc: "Start document",
       parent: editorRef.current,
-      extensions:[oneDark, customTheme, basicSetup,languageExtension, keymap.of([indentWithTab])]
+      extensions:[oneDark, customTheme, basicSetup,languageExtension, keymap.of([indentWithTab]), minimap()]
     });
     viewRef.current = view;
 
