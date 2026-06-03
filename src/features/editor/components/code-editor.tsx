@@ -7,6 +7,7 @@ import { customTheme } from "../extensions/theme";
 import { getLanguageExtension } from "../extensions/language-extension";
 import { minimap } from  "../extensions/minimap";
 import {indentationMarkers} from "@replit/codemirror-indentation-markers"
+import {suggestion} from '../extensions/suggestion'
 
 
 interface Props{
@@ -31,6 +32,7 @@ export const CodeEditor = ({fileName, initialValue, onChange}:Props) => {
          customTheme, 
          customSetup,
          languageExtension,
+         suggestion(fileName),
           keymap.of([indentWithTab]), 
           minimap(),
           indentationMarkers(), 
