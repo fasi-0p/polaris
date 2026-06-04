@@ -120,7 +120,7 @@ export const ProjectsList = ({
             >
               <span>View all</span>
               <Kbd className="bg-accent border">
-                ⌘K
+                ctrl+K
               </Kbd>
             </button>
           </div>
