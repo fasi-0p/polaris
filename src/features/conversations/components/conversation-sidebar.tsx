@@ -28,6 +28,13 @@ export const ConversationSidebar=({projectId}:ConversationSidebarProps)=>{
         (msg)=> msg.status === 'processing'
     )
 
+    const handleCancel = async()=>{
+        try{
+            await ky.post("/api/messages/cancel", {json: {projectId}})
+        }catch{
+            toast.error('unable to cancel request ')
+        }
+    }
 
     const handleCreateConversation=async()=>{
         try{
@@ -43,6 +50,7 @@ export const ConversationSidebar=({projectId}:ConversationSidebarProps)=>{
     const handleSubmit =async(message: PromptInputMessage)=>{
         //if processing and no new message this is just stop function
         if (isProcessing && !message.text){
+            await handleCancel()
             setInput('')
             return
         }
@@ -67,7 +75,7 @@ export const ConversationSidebar=({projectId}:ConversationSidebarProps)=>{
         }catch{
             toast.error('Unable to send message')
         }
-        setInput('')
+        setInput('' )
     }
     
     return(
@@ -95,6 +103,10 @@ export const ConversationSidebar=({projectId}:ConversationSidebarProps)=>{
                                         <LoaderIcon className='size-4 animate-spin'/>
                                         <span>Thinking...</span>
                                     </div>
+                                ): message.status==='cancelled'?(
+                                    <span className='text-muted-foreground italic'>
+                                        Prompt cancelled
+                                    </span>
                                 ):(
                                     <MessageResponse>{message.content}</MessageResponse>
                                 )}
