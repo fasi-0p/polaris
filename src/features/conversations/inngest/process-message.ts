@@ -6,6 +6,7 @@ import {convex} from '@/lib/convex-client'
 import { api } from "../../../../convex/_generated/api";
 import { CODING_AGENT_SYSTEM_PROMPT, TITLE_GENERATOR_SYSTEM_PROMPT } from "./constants";
 import { DEFAULT_CONVERSATION_TITLE } from "../constants";
+import { createReadFilesTool } from "./tools/read-files";
 
 
 interface MessageEvent {
@@ -118,6 +119,19 @@ export const processMessage = inngest.createFunction(
       }
     }
 
+    //coding agent with file tools
+    const codingAgent = createAgent({
+      name: 'polaris',
+      description: "An expert AI coding assistant",
+      system: systemPrompt,
+      model: gemini({
+          model: "gemini-2.5-flash-lite",
+          apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+        }),
+        tools:[
+          createReadFilesTool({internalKey })
+        ]
+    })
 
     await step.run("update-assistant-message", async () => {
         await convex.mutation(api.system.updateMessageContent, {
