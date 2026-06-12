@@ -7,7 +7,8 @@ import { api } from "../../../../convex/_generated/api";
 import { CODING_AGENT_SYSTEM_PROMPT, TITLE_GENERATOR_SYSTEM_PROMPT } from "./constants";
 import { DEFAULT_CONVERSATION_TITLE } from "../constants";
 import { createReadFilesTool } from "./tools/read-files";
-
+import { createListFilesTool } from "./tools/list-files";
+import {createNetwork} from '@inngest/agent-kit'
 
 interface MessageEvent {
   messageId: Id<"messages">;
@@ -129,16 +130,59 @@ export const processMessage = inngest.createFunction(
           apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
         }),
         tools:[
-          createReadFilesTool({internalKey })
+          createListFilesTool({projectId, internalKey}),
+          createReadFilesTool({internalKey }),
         ]
     })
+
+    //inngest agent kit networks
+    const network = createNetwork({
+      name: "polaris-network",
+      agents: [codingAgent],
+      maxIter: 20,
+      router: ({ network }) => {
+        const lastResult = network.state.results.at(-1);
+        const hasTextResponse = lastResult?.output.some(
+          (m) => m.type === "text" && m.role === "assistant"
+        );
+        const hasToolCalls = lastResult?.output.some(
+          (m) => m.type === "tool_call"
+        );
+
+        // Anthropic outputs text AND tool calls together
+        // Only stop if there's text WITHOUT tool calls (final response)
+        if (hasTextResponse && !hasToolCalls) {
+          return undefined;
+        }
+        return codingAgent;
+      }
+    });
+
+    // Run the agent
+    const result = await network.run(message);
+
+    // Extract the assistant's text response from the last agent result
+    const lastResult = result.state.results.at(-1);
+    const textMessage = lastResult?.output.find((m) => m.type === "text" && m.role === "assistant");
+
+    let assistantResponse =
+      "I processed your request. Let me know if you need anything else!";
+
+    if (textMessage?.type === "text") {
+      assistantResponse =
+        typeof textMessage.content === "string"
+          ? textMessage.content
+          : textMessage.content.map((c) => c.text).join("");
+    }
 
     await step.run("update-assistant-message", async () => {
         await convex.mutation(api.system.updateMessageContent, {
             internalKey,
             messageId,
-            content: "AI processed this message (TODO)",
+            content: assistantResponse ,
         });
-        });
+      });
+
+      return {success: true, messageId, conversationId}
   }
 );
