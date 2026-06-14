@@ -8,6 +8,7 @@ import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { FileExplorer } from "./file-explorer/index";
 import { EditorView } from "@/features/editor/components/editor-view"
+import { PreviewView } from "./preview-view";
 
 
 const MIN_SIDEBAR_WIDTH = 200;
@@ -102,7 +103,9 @@ export const ProjectIdView = ({
             activeView === "preview" ? "visible" : "invisible"
           )}
         >
-          <div className="h-full">Preview</div>
+          <div className="h-full">
+            <PreviewView projectId={projectId}/>
+          </div>
         </div>
       </div>
     </div>
