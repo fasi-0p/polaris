@@ -20,9 +20,11 @@ export async function POST(request: Request) {
 
   const hasPro = has({ plan: "pro" });
 
-  if (!hasPro) {
-    return NextResponse.json({ error: "Pro plan required" }, { status: 403 });
-  }
+  //todo: remove this during production environment
+
+//   if (!hasPro) {
+//     return NextResponse.json({ error: "Pro plan required" }, { status: 403 });
+//   }
 
   const body = await request.json();
   const { projectId, repoName, visibility, description } = requestSchema.parse(body);

@@ -1,5 +1,5 @@
 import React from "react";
-import ky from "ky";
+import ky, { HTTPError } from "ky";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
@@ -75,48 +75,45 @@ export const ExportPopover = ({ projectId }: ExportPopoverProps) => {
             visibility: value.visibility,
             description: value.description || undefined,
           },
-          throwHttpErrors: false,
         });
-
-        if (!response.ok) {
-          let body: { error?: string } = {};
-
-          try {
-            body = await response.json<{ error: string }>();
-          } catch {
-            // Ignore invalid JSON responses
-          }
-
-          if (body.error?.includes("Pro plan required")) {
-            toast.error("Upgrade to export repositories", {
-              action: {
-                label: "Upgrade",
-                onClick: () => openUserProfile(),
-              },
-            });
-            setOpen(false);
-            return;
-          }
-
-          if (body.error?.includes("GitHub not connected")) {
-            toast.error("GitHub account not connected", {
-              action: {
-                label: "Connect",
-                onClick: () => openUserProfile(),
-              },
-            });
-            setOpen(false);
-            return;
-          }
-
-          toast.error(body.error || "Unable to export repository");
-          return;
-        }
 
         toast.success("Export started...");
       } catch (error) {
-        console.error(error);
-        toast.error("Unable to export repository");
+        let errorMessage = "Unable to export repository";
+
+        if (error instanceof HTTPError) {
+          try {
+            const body = (await error.response.clone().json()) as { error?: string };
+            if (body.error?.includes("Pro plan required")) {
+              toast.error("Upgrade to export repositories", {
+                action: {
+                  label: "Upgrade",
+                  onClick: () => openUserProfile(),
+                },
+              });
+              setOpen(false);
+              return;
+            }
+
+            if (body.error?.includes("GitHub not connected")) {
+              toast.error("GitHub account not connected", {
+                action: {
+                  label: "Connect",
+                  onClick: () => openUserProfile(),
+                },
+              });
+              setOpen(false);
+              return;
+            }
+
+            errorMessage = body.error || errorMessage;
+          } catch {
+            // If response body can't be parsed, use default message
+            errorMessage = error instanceof Error ? error.message : errorMessage;
+          }
+        }
+
+        toast.error(errorMessage);
       }
     },
   });
@@ -164,11 +161,7 @@ export const ExportPopover = ({ projectId }: ExportPopoverProps) => {
           </p>
           <div className="flex flex-col w-full gap-2">
             <Button size="sm" className="w-full" asChild>
-              <Link
-                href={exportRepoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link href={exportRepoUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLinkIcon className="size-4 mr-1" />
                 View on GitHub
               </Link>
@@ -220,7 +213,6 @@ export const ExportPopover = ({ projectId }: ExportPopoverProps) => {
               Export your project to a GitHub repository.
             </p>
           </div>
-
           <form.Field name="repoName">
             {(field) => {
               const isInvalid =
@@ -240,34 +232,37 @@ export const ExportPopover = ({ projectId }: ExportPopoverProps) => {
                     aria-invalid={isInvalid}
                     placeholder="my-project"
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
             }}
           </form.Field>
 
           <form.Field name="visibility">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor={field.name}>Visibility</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(value: "public" | "private") =>
-                    field.handleChange(value)
-                  }
-                >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Select visibility" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="private">Private</SelectItem>
-                    <SelectItem value="public">Public</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
+            {(field) => {
+              return (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>
+                    Visibility
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value: "public" | "private") =>
+                      field.handleChange(value)
+                    }
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="Select visibility" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
+                    </SelectContent>
+                  </Select>
+            
+                </Field>
+              );
+            }}
           </form.Field>
 
           <form.Field name="description">
@@ -277,7 +272,9 @@ export const ExportPopover = ({ projectId }: ExportPopoverProps) => {
 
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    Description
+                  </FieldLabel>
                   <Textarea
                     id={field.name}
                     name={field.name}
@@ -288,9 +285,7 @@ export const ExportPopover = ({ projectId }: ExportPopoverProps) => {
                     placeholder="A short description of your project"
                     rows={2}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
             }}
