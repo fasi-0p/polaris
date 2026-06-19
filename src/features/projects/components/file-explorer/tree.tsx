@@ -32,8 +32,8 @@ export const Tree = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [creating, setCreating] = useState<"file" | "folder" | null>(null);
 
-  const renameFile = useRenameFile();
-  const deleteFile = useDeleteFile();
+  const renameFile = useRenameFile({projectId, parentId: item.parentId});
+  const deleteFile = useDeleteFile({projectId, parentId: item.parentId});
   const createFile = useCreateFile();
   const createFolder = useCreateFolder();
 
@@ -189,7 +189,6 @@ export const Tree = ({
         onClick={() => setIsOpen((value) => !value)}
         onRename={() => setIsRenaming(true)}
         onDelete={() => {
-          // todo: close tab
           deleteFile({ id: item._id });
         }}
         onCreateFile={() => startCreating("file")}

@@ -20,5 +20,4 @@ export const useConversations = (projectId: Id<"projects">) => {
 
 export const useCreateConversation = () => {
   return useMutation(api.conversations.create);
-  //todo add optimistic mutation
 };
