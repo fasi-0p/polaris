@@ -7,9 +7,9 @@ const Layout = async ({
   params
 }: {
   children: React.ReactNode
-  params: Promise<{ projectId: Id<"projects"> }>  
+  params: Promise<{ projectId: string }>  
 }) => {
-  const { projectId } = await params  // ← Await params
+  const { projectId } = await params  // Await params
   console.log("projectId param:", projectId);
   return (
     <ProjectIdLayout projectId={projectId as Id<"projects">}>
