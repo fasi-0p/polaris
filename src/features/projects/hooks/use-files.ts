@@ -1,7 +1,17 @@
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {Id} from "../../../../convex/_generated/dataModel"
-import { useQuery } from "convex/react";
+
+// Sort: folders first, then files, alphabetically within each group
+const sortFiles = <T extends { type: "file" | "folder"; name: string }>(
+  files: T[]
+): T[] => {
+  return [...files].sort((a, b) => {
+    if (a.type === "folder" && b.type === "file") return -1;
+    if (a.type === "file" && b.type === "folder") return 1;
+    return a.name.localeCompare(b.name);
+  });
+};
 
 export const useCreateFile =()=>{
     return useMutation(api.files.createFile)
