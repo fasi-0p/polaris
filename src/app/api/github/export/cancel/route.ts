@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   await convex.mutation(api.system.updateExportStatus, {
     internalKey,
     projectId: projectId as Id<"projects">,
-    status: "cancelled",
+    status: "failed",
   });
 
   return NextResponse.json({ 
