@@ -1,16 +1,30 @@
 import { v } from "convex/values";
-import { query,mutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 
-const validateInternalKey = (key:string)=>{
-    const internalKey=process.env.POLARIS_CONVEX_INTERNAL_KEY
-    if(!internalKey) throw new Error('Convex internal key not configured')
-    if(key!==internalKey) throw new Error('Invalid internal key')
-}
+const validateInternalKey = (key: string) => {
+  const internalKey = process.env.POLARIS_CONVEX_INTERNAL_KEY;
+  if (!internalKey) throw new Error("Convex internal key not configured");
+  if (key !== internalKey) throw new Error("Invalid internal key");
+};
+
+// Safe limit to prevent exceeding Convex's 1 MiB document limit.
+// 800,000 characters is safely under the limit (accounting for UTF-8 encoding and other document fields).
+const MAX_CONTENT_LENGTH = 800000;
+
+const truncateContent = (content: string) => {
+  if (content.length > MAX_CONTENT_LENGTH) {
+    return (
+      content.slice(0, MAX_CONTENT_LENGTH) +
+      "\n\n/* ... [Content truncated by system due to size limits] ... */"
+    );
+  }
+  return content;
+};
 
 export const getConversationById = query({
   args: {
     conversationId: v.id("conversations"),
-    internalKey: v.string()
+    internalKey: v.string(),
   },
 
   handler: async (ctx, args) => {
@@ -23,10 +37,7 @@ export const createMessage = mutation({
     internalKey: v.string(),
     conversationId: v.id("conversations"),
     projectId: v.id("projects"),
-    role: v.union(
-      v.literal("user"),
-      v.literal("assistant")
-    ),
+    role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     status: v.optional(
       v.union(
@@ -38,14 +49,14 @@ export const createMessage = mutation({
   },
 
   handler: async (ctx, args) => {
-    validateInternalKey(args.internalKey)
+    validateInternalKey(args.internalKey);
 
     const messageId = await ctx.db.insert("messages", {
-        conversationId: args.conversationId,
-        projectId: args.projectId,
-        role: args.role,
-        content: args.content,
-        status: args.status,
+      conversationId: args.conversationId,
+      projectId: args.projectId,
+      role: args.role,
+      content: args.content,
+      status: args.status,
     });
 
     //update conversation updated at
@@ -53,7 +64,7 @@ export const createMessage = mutation({
       updatedAt: Date.now(),
     });
 
-    return messageId
+    return messageId;
   },
 });
 
@@ -85,9 +96,7 @@ export const getProcessingMessages = query({
     return await ctx.db
       .query("messages")
       .withIndex("by_project_status", (q) =>
-        q
-          .eq("projectId", args.projectId)
-          .eq("status", "processing")
+        q.eq("projectId", args.projectId).eq("status", "processing")
       )
       .collect();
   },
@@ -142,14 +151,14 @@ export const updateConversationTitle = mutation({
     conversationId: v.id("conversations"),
     title: v.string(),
   },
-   handler: async (ctx, args) => {
+  handler: async (ctx, args) => {
     validateInternalKey(args.internalKey);
 
     await ctx.db.patch(args.conversationId, {
       title: args.title,
       updatedAt: Date.now(),
     });
-   },
+  },
 });
 
 // Used for Agent "ListFiles" tool
@@ -198,7 +207,7 @@ export const updateFile = mutation({
     }
 
     await ctx.db.patch(args.fileId, {
-      content: args.content,
+      content: truncateContent(args.content),
       updatedAt: Date.now(),
     });
 
@@ -235,7 +244,7 @@ export const createFile = mutation({
     const fileId = await ctx.db.insert("files", {
       projectId: args.projectId,
       name: args.name,
-      content: args.content,
+      content: truncateContent(args.content),
       type: "file",
       parentId: args.parentId,
       updatedAt: Date.now(),
@@ -287,7 +296,7 @@ export const createFiles = mutation({
       const fileId = await ctx.db.insert("files", {
         projectId: args.projectId,
         name: file.name,
-        content: file.content,
+        content: truncateContent(file.content),
         type: "file",
         parentId: args.parentId,
         updatedAt: Date.now(),
@@ -390,7 +399,7 @@ export const deleteFile = mutation({
   handler: async (ctx, args) => {
     validateInternalKey(args.internalKey);
 
-     const file = await ctx.db.get(args.fileId);
+    const file = await ctx.db.get(args.fileId);
     if (!file) {
       throw new Error("File not found");
     }
@@ -430,7 +439,7 @@ export const deleteFile = mutation({
 
     return args.fileId;
   },
-}); 
+});
 
 export const cleanup = mutation({
   args: {
@@ -502,7 +511,7 @@ export const createBinaryFile = mutation({
       parentId: args.parentId,
       updatedAt: Date.now(),
     });
-    
+
     return fileId;
   },
 });
@@ -537,8 +546,7 @@ export const updateExportStatus = mutation({
       v.union(
         v.literal("exporting"),
         v.literal("completed"),
-        v.literal("failed"),
-        v.literal("cancelled")
+        v.literal("failed")
       )
     ),
     repoUrl: v.optional(v.string()),
